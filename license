@@ -1,0 +1,18 @@
+
+### 7. Create the zip file:
+
+To create the final zip file, run these commands:
+
+```bash
+# Create the complete project
+cd portfolio-as-a-service
+
+# Install dependencies (optional, removes node_modules from zip)
+npm install --prefix backend
+npm install --prefix frontend
+
+# Create zip
+zip -r portfolio-as-a-service.zip . -x "*/node_modules/*" "*/.git/*" "*.log"
+
+# Or use tar for better compression
+tar -czf portfolio-as-a-service.tar.gz --exclude="node_modules" --exclude=".git" .
