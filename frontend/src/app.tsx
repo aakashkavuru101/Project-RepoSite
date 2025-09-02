@@ -79,7 +79,6 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
-  const [repoData, setRepoData] = useState<any>(null);
 
   const t = translations[language];
 
@@ -146,8 +145,6 @@ function App() {
       });
 
       if (response.data.success) {
-        setRepoData(response.data.data);
-        
         // Create blob URL for generated HTML
         const blob = new Blob([response.data.data.html], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
@@ -305,7 +302,6 @@ function App() {
                     onClick={() => {
                       setGeneratedUrl(null);
                       setRepoUrl('');
-                      setRepoData(null);
                     }}
                     className="ml-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
