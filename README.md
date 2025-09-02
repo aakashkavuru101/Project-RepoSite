@@ -135,7 +135,7 @@ frontend/
 ```bash
 PORT=5000
 MONGODB_URI=mongodb://localhost:27017/reposite
-GITHUB_TOKEN=your_github_token_here
+GITHUB_API_TOKEN=your_github_token_here
 NODE_ENV=development
 CORS_ORIGIN=http://localhost:3000
 ```

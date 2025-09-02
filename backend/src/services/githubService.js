@@ -12,7 +12,7 @@ class GitHubService {
     
     // Set up request interceptor to add auth header dynamically
     this.client.interceptors.request.use((config) => {
-      const token = process.env.GITHUB_TOKEN;
+      const token = process.env.GITHUB_API_TOKEN;
       config.headers = {
         'Accept': 'application/vnd.github.v3+json',
         'User-Agent': 'RepoSite-Portfolio-Generator',
