@@ -9,24 +9,29 @@
     "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["portfolio", "github", "api", "website-generator"],
+  "keywords": [
+    "portfolio",
+    "github",
+    "api",
+    "website-generator"
+  ],
   "author": "RepoSite Team",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "helmet": "^7.1.0",
-    "morgan": "^1.10.0",
-    "dotenv": "^16.3.1",
-    "mongoose": "^8.0.3",
     "axios": "^1.6.2",
     "cheerio": "^1.0.0-rc.12",
-    "marked": "^9.1.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
     "joi": "^17.11.0",
+    "marked": "^9.1.6",
+    "mongoose": "^8.0.3",
+    "morgan": "^1.10.0",
     "rate-limiter-flexible": "^4.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.1.10"
   },
   "engines": {
     "node": ">=18.0.0"
