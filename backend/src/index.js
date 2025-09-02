@@ -111,7 +111,21 @@ const startServer = async () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`📡 CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
-    console.log(`🔑 GitHub API: ${process.env.GITHUB_API_TOKEN ? 'Configured' : 'Not configured'}`);
+    
+    const hasToken = process.env.GITHUB_API_TOKEN && process.env.GITHUB_API_TOKEN.trim();
+    console.log(`🔑 GitHub API: ${hasToken ? 'Configured' : 'Not configured'}`);
+    
+    if (!hasToken) {
+      console.log('⚠️  WARNING: No GitHub API token configured!');
+      console.log('   Rate limits: 60 requests/hour without token vs 5000 with token');
+      console.log('   See SETUP.md for instructions to get a token');
+    }
+    
+    console.log(`\n📋 Available endpoints:`);
+    console.log(`   GET  http://localhost:${PORT}/health`);
+    console.log(`   POST http://localhost:${PORT}/api/repository/analyze`);
+    console.log(`   GET  http://localhost:${PORT}/api/cache/stats`);
+    console.log(`\n✅ Backend ready! Open http://localhost:3000 for frontend\n`);
   });
 };
 

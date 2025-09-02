@@ -22,7 +22,7 @@ A sophisticated Portfolio-as-a-Service application that analyzes GitHub reposito
 
 ### Technical Excellence
 - **🔒 Production Ready**: Security-first approach with rate limiting and validation
-- **💾 Intelligent Caching**: MongoDB-based caching with graceful fallbacks
+- **💾 Intelligent Caching**: In-memory caching with automatic cleanup and statistics
 - **🛡️ Error Handling**: Comprehensive error handling and user feedback
 - **🎯 Type Safety**: Full TypeScript implementation for reliability
 
@@ -31,7 +31,7 @@ A sophisticated Portfolio-as-a-Service application that analyzes GitHub reposito
 ### Prerequisites
 - Node.js 18+ 
 - npm or yarn
-- MongoDB (optional - app works without it)
+- GitHub Personal Access Token (for higher rate limits)
 
 ### Installation
 
@@ -46,7 +46,7 @@ A sophisticated Portfolio-as-a-Service application that analyzes GitHub reposito
    cd backend
    npm install
    cp .env.example .env
-   # Edit .env with your GitHub token and MongoDB URI
+   # Edit .env with your GitHub token (see backend/SETUP.md for details)
    ```
 
 3. **Set up Frontend**
@@ -108,10 +108,10 @@ backend/
 │   │   ├── repository.js     # Repository analysis endpoints
 │   │   └── cache.js          # Cache management endpoints
 │   ├── services/
-│   │   └── githubService.js  # GitHub API integration
-│   └── models/
-│       └── RepositoryCache.js # MongoDB caching model
+│   │   ├── githubService.js  # GitHub API integration
+│   │   └── cacheService.js   # In-memory caching service
 ├── package.json
+├── SETUP.md                  # Setup instructions
 └── .env.example
 ```
 
@@ -193,7 +193,7 @@ npm run preview  # Preview production build
 #### Backend Technologies
 - **Node.js** - Runtime environment
 - **Express.js** - Web framework
-- **MongoDB** - Database for caching
+- **In-Memory Cache** - Fast caching with automatic cleanup
 - **Axios** - HTTP client for GitHub API
 - **Joi** - Input validation
 - **Helmet** - Security middleware
@@ -211,7 +211,6 @@ npm run preview  # Preview production build
 
 1. **Environment Setup**
    - Set `NODE_ENV=production`
-   - Configure proper MongoDB URI
    - Set up GitHub API token with appropriate permissions
 
 2. **Security**
@@ -222,7 +221,6 @@ npm run preview  # Preview production build
 3. **Hosting Options**
    - **Frontend**: Vercel, Netlify, GitHub Pages
    - **Backend**: Railway, Render, DigitalOcean
-   - **Database**: MongoDB Atlas, local MongoDB instance
 
 ### Docker Support (Optional)
 ```dockerfile
