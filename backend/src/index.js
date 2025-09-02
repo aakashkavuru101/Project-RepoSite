@@ -3,7 +3,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 import repositoryRoutes from './routes/repository.js';
@@ -98,37 +97,15 @@ app.use('*', (req, res) => {
 
 // MongoDB connection
 const connectDB = async () => {
-  try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/reposite';
-    
-    // Set a shorter timeout for MongoDB connection
-    await Promise.race([
-      mongoose.connect(mongoUri, {
-        serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-        socketTimeoutMS: 5000,
-      }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('MongoDB connection timeout')), 5000)
-      )
-    ]);
-    
-    console.log('✅ MongoDB connected successfully');
-    return true;
-  } catch (error) {
-    console.warn('⚠️ MongoDB connection failed:', error.message);
-    console.log('📝 Running without database caching...');
-    return false;
-  }
+  // Removed MongoDB - using in-memory cache instead
+  console.log('📝 Running with in-memory cache (MongoDB removed)');
+  return false;
 };
 
 // Start server
 const startServer = async () => {
-  const mongoConnected = await connectDB();
-  
-  if (!mongoConnected) {
-    // Disable MongoDB-dependent routes if connection failed
-    console.log('🔧 Database features disabled - running in memory only mode');
-  }
+  // Using in-memory cache instead of MongoDB
+  console.log('🔧 Database features using in-memory cache');
   
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);

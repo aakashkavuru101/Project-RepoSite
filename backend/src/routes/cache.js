@@ -1,57 +1,22 @@
 import express from 'express';
-import RepositoryCache from '../models/RepositoryCache.js';
+import cacheService from '../services/cacheService.js';
 
 const router = express.Router();
 
 // GET /api/cache/stats
 router.get('/stats', async (req, res) => {
   try {
-    const stats = await RepositoryCache.getCacheStats();
-    const cacheStats = stats[0] || {
-      totalEntries: 0,
-      totalAccesses: 0,
-      avgAccessCount: 0,
-      oldestEntry: null,
-      newestEntry: null
-    };
-
-    // Additional statistics
-    const validEntries = await RepositoryCache.countDocuments({
-      expiresAt: { $gt: new Date() }
-    });
-
-    const expiredEntries = await RepositoryCache.countDocuments({
-      expiresAt: { $lte: new Date() }
-    });
-
-    // Top accessed repositories
-    const topAccessed = await RepositoryCache
-      .find({}, {
-        fullName: 1,
-        accessCount: 1,
-        'data.repository.stars': 1,
-        'data.repository.language': 1,
-        lastAccessed: 1
-      })
-      .sort({ accessCount: -1 })
-      .limit(5);
+    const stats = cacheService.getCacheStats();
+    const topAccessed = cacheService.getTopAccessed(5);
 
     res.json({
       cache: {
-        ...cacheStats,
-        validEntries,
-        expiredEntries,
-        hitRate: cacheStats.totalEntries > 0 
-          ? ((cacheStats.totalAccesses / cacheStats.totalEntries) * 100).toFixed(2) 
+        ...stats,
+        hitRate: stats.totalEntries > 0 
+          ? ((stats.totalAccesses / stats.totalEntries) * 100).toFixed(2) 
           : 0
       },
-      topAccessed: topAccessed.map(entry => ({
-        name: entry.fullName,
-        accessCount: entry.accessCount,
-        stars: entry.data?.repository?.stars || 0,
-        language: entry.data?.repository?.language,
-        lastAccessed: entry.lastAccessed
-      }))
+      topAccessed
     });
   } catch (error) {
     console.error('Cache stats error:', error);
@@ -65,13 +30,11 @@ router.get('/stats', async (req, res) => {
 router.delete('/cleanup', async (req, res) => {
   try {
     // Remove expired entries
-    const result = await RepositoryCache.deleteMany({
-      expiresAt: { $lte: new Date() }
-    });
+    const deletedCount = cacheService.cleanupExpired();
 
     res.json({
       message: 'Cache cleanup completed',
-      deletedEntries: result.deletedCount,
+      deletedEntries: deletedCount,
       cleanupTime: new Date().toISOString()
     });
   } catch (error) {
@@ -85,11 +48,11 @@ router.delete('/cleanup', async (req, res) => {
 // DELETE /api/cache/clear
 router.delete('/clear', async (req, res) => {
   try {
-    const result = await RepositoryCache.deleteMany({});
+    const deletedCount = cacheService.clear();
     
     res.json({
       message: 'Cache cleared successfully',
-      deletedEntries: result.deletedCount,
+      deletedEntries: deletedCount,
       clearTime: new Date().toISOString()
     });
   } catch (error) {
@@ -113,51 +76,17 @@ router.get('/search', async (req, res) => {
 
     const searchLimit = Math.min(parseInt(limit), 50);
     const searchPage = Math.max(parseInt(page), 1);
-    const skip = (searchPage - 1) * searchLimit;
 
-    const searchQuery = {
-      $or: [
-        { fullName: { $regex: q, $options: 'i' } },
-        { 'data.repository.description': { $regex: q, $options: 'i' } },
-        { 'data.repository.language': { $regex: q, $options: 'i' } }
-      ]
-    };
-
-    const results = await RepositoryCache
-      .find(searchQuery, {
-        repositoryUrl: 1,
-        fullName: 1,
-        'data.repository.name': 1,
-        'data.repository.description': 1,
-        'data.repository.language': 1,
-        'data.repository.stars': 1,
-        'data.repository.topics': 1,
-        createdAt: 1,
-        accessCount: 1
-      })
-      .sort({ accessCount: -1, 'data.repository.stars': -1 })
-      .skip(skip)
-      .limit(searchLimit);
-
-    const total = await RepositoryCache.countDocuments(searchQuery);
+    const result = cacheService.searchRepositories(q, searchPage, searchLimit);
 
     res.json({
       query: q,
-      results: results.map(cache => ({
-        url: cache.repositoryUrl,
-        name: cache.data?.repository?.name || cache.fullName,
-        description: cache.data?.repository?.description,
-        language: cache.data?.repository?.language,
-        stars: cache.data?.repository?.stars || 0,
-        topics: cache.data?.repository?.topics || [],
-        analyzedAt: cache.createdAt,
-        accessCount: cache.accessCount
-      })),
+      results: result.results,
       pagination: {
-        page: searchPage,
-        limit: searchLimit,
-        total,
-        pages: Math.ceil(total / searchLimit)
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        pages: result.pages
       }
     });
   } catch (error) {
