@@ -1,6 +1,6 @@
 import express from 'express';
 import Joi from 'joi';
-import GitHubService from '../services/githubServiceMock.js';
+import GitHubService from '../services/githubService.js';
 import RepositoryCache from '../models/RepositoryCache.js';
 
 const router = express.Router();

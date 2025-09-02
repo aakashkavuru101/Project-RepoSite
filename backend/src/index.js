@@ -134,7 +134,7 @@ const startServer = async () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`📡 CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
-    console.log(`🔑 GitHub API: ${process.env.GITHUB_TOKEN ? 'Configured' : 'Not configured'}`);
+    console.log(`🔑 GitHub API: ${process.env.GITHUB_API_TOKEN ? 'Configured' : 'Not configured'}`);
   });
 };
 
