@@ -1,7 +1,7 @@
 import express from 'express';
 import Joi from 'joi';
 import GitHubService from '../services/githubService.js';
-import RepositoryCache from '../models/RepositoryCache.js';
+import cacheService from '../services/cacheService.js';
 
 const router = express.Router();
 
@@ -37,21 +37,17 @@ router.post('/analyze', async (req, res) => {
 
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
-      try {
-        const cachedData = await RepositoryCache.findValidCache(normalizedUrl);
-        if (cachedData) {
-          console.log(`⚡ Cache hit for: ${normalizedUrl}`);
-          await cachedData.recordAccess();
-          
-          return res.json({
-            data: cachedData.data,
-            cached: true,
-            cacheAge: Date.now() - cachedData.createdAt.getTime(),
-            accessCount: cachedData.accessCount
-          });
-        }
-      } catch (cacheError) {
-        console.warn('⚠️ Cache check failed (running without database):', cacheError.message);
+      const cachedData = cacheService.findValidCache(normalizedUrl);
+      if (cachedData) {
+        console.log(`⚡ Cache hit for: ${normalizedUrl}`);
+        cacheService.recordAccess(normalizedUrl);
+        
+        return res.json({
+          data: cachedData.data,
+          cached: true,
+          cacheAge: Date.now() - cachedData.createdAt.getTime(),
+          accessCount: cachedData.accessCount
+        });
       }
     }
 
@@ -60,30 +56,8 @@ router.post('/analyze', async (req, res) => {
     const analysisData = await GitHubService.analyzeRepository(normalizedUrl);
 
     // Cache the results
-    try {
-      await RepositoryCache.findOneAndUpdate(
-        { repositoryUrl: normalizedUrl },
-        {
-          repositoryUrl: normalizedUrl,
-          repositoryId: analysisData.repository.id,
-          fullName: analysisData.repository.fullName,
-          data: analysisData,
-          updatedAt: new Date(),
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-          $inc: { accessCount: 1 },
-          lastAccessed: new Date()
-        },
-        { 
-          upsert: true, 
-          new: true,
-          setDefaultsOnInsert: true
-        }
-      );
-      console.log(`💾 Cached analysis for: ${normalizedUrl}`);
-    } catch (cacheError) {
-      console.warn('⚠️ Failed to cache results (running without database):', cacheError.message);
-      // Continue without caching
-    }
+    const cachedEntry = cacheService.upsertCache(normalizedUrl, analysisData);
+    console.log(`💾 Cached analysis for: ${normalizedUrl}`);
 
     res.json({
       data: analysisData,
@@ -131,7 +105,7 @@ router.get('/status/:owner/:repo', async (req, res) => {
     const { owner, repo } = req.params;
     const repositoryUrl = `https://github.com/${owner}/${repo}`;
     
-    const cachedData = await RepositoryCache.findValidCache(repositoryUrl);
+    const cachedData = cacheService.findValidCache(repositoryUrl);
     
     if (cachedData) {
       res.json({
@@ -139,7 +113,7 @@ router.get('/status/:owner/:repo', async (req, res) => {
         lastAnalyzed: cachedData.createdAt,
         expiresAt: cachedData.expiresAt,
         accessCount: cachedData.accessCount,
-        isExpired: !cachedData.isValid()
+        isExpired: cachedData.expiresAt < new Date()
       });
     } else {
       res.json({
@@ -160,40 +134,16 @@ router.get('/recent', async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 10, 50);
     const page = Math.max(parseInt(req.query.page) || 1, 1);
-    const skip = (page - 1) * limit;
 
-    const recent = await RepositoryCache
-      .find({}, {
-        repositoryUrl: 1,
-        fullName: 1,
-        'data.repository.name': 1,
-        'data.repository.description': 1,
-        'data.repository.language': 1,
-        'data.repository.stars': 1,
-        createdAt: 1,
-        accessCount: 1
-      })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    const total = await RepositoryCache.countDocuments();
+    const result = cacheService.getRecentRepositories(page, limit);
 
     res.json({
-      repositories: recent.map(cache => ({
-        url: cache.repositoryUrl,
-        name: cache.data?.repository?.name || cache.fullName,
-        description: cache.data?.repository?.description,
-        language: cache.data?.repository?.language,
-        stars: cache.data?.repository?.stars,
-        analyzedAt: cache.createdAt,
-        accessCount: cache.accessCount
-      })),
+      repositories: result.results,
       pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        pages: result.pages
       }
     });
   } catch (error) {
